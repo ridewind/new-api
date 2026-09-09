@@ -59,6 +59,9 @@ const (
 	ChannelTypeSub2API        = 59
 	ChannelTypeNewAPI         = 60
 	ChannelTypeTaskPlugin     = 61
+	// Custom channel. Kept at a high number to avoid colliding with upstream
+	// channel types when merging official code updates.
+	ChannelTypeHuaweiMaaS     = 70
 	ChannelTypeDummy          // this one is only for count, do not add any channel after this
 
 )
@@ -126,6 +129,15 @@ var ChannelBaseURLs = []string{
 	"",                                          //59
 	"",                                          //60
 	"",                                          //61
+	"",                                          //62
+	"",                                          //63
+	"",                                          //64
+	"",                                          //65
+	"",                                          //66
+	"",                                          //67
+	"",                                          //68
+	"",                                          //69
+	"https://api.modelarts-maas.com",            //70
 }
 
 func GetChannelBaseURL(channelType int) string {
@@ -194,6 +206,7 @@ var ChannelTypeNames = map[int]string{
 	ChannelTypeSub2API:        "Sub2API",
 	ChannelTypeNewAPI:         "New API",
 	ChannelTypeTaskPlugin:     "Task Plugin",
+	ChannelTypeHuaweiMaaS:     "Huawei MaaS",
 }
 
 func GetChannelTypeName(channelType int) string {
