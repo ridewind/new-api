@@ -6,6 +6,8 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
@@ -38,6 +40,16 @@ func VideoSyncHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
+	}
+
+	// LiteLLM 直通层按 query 参数选部署（multipart 体不解析），
+	// 上游 URL 必须带模型名；客户端已带 ?model= 时不重复加
+	if !strings.Contains(info.RequestURLPath, "model=") {
+		sep := "?"
+		if strings.Contains(info.RequestURLPath, "?") {
+			sep = "&"
+		}
+		info.RequestURLPath = info.RequestURLPath + sep + "model=" + url.QueryEscape(request.Model)
 	}
 
 	adaptor := GetAdaptor(info.ApiType)
