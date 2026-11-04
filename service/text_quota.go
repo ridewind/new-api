@@ -376,6 +376,9 @@ func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInf
 		quota, clamp := common.QuotaFromDecimalChecked(quotaCalculateDecimal)
 		summary.Quota = quota
 		noteQuotaClamp(relayInfo, clamp)
+		// 按次固定价（ModelPrice，如 OCR）：零 token 是正常形态，
+		// 标记固定价结算，避免 hasBillableUsage 误判「上游无计费信息」把 quota 清零
+		summary.FixedPriceBilling = true
 	}
 
 	if !summary.hasBillableUsage() {
