@@ -121,6 +121,6 @@ func VideoSyncHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 		service.ResetStatusCode(newAPIError, statusCodeMappingStr)
 		return newAPIError
 	}
-	service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), "")
+	service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), nil)
 	return nil
 }
