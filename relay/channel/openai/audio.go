@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
@@ -80,7 +81,20 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 		var duration float64
 		var durationErr error
 
-		if audioFormat == "pcm" {
+		// 上游若直接给出音频时长响应头（aihub cpu-audio 镜像的 X-Audio-Duration，单位秒），
+		// 优先采用，避免依赖容器解析；LiteLLM 链路会剥自定义头，仍走字节解析兜底。
+		for _, headerName := range []string{"X-Audio-Duration", "x-audio-duration"} {
+			if raw := resp.Header.Get(headerName); raw != "" {
+				if v, perr := strconv.ParseFloat(raw, 64); perr == nil && v > 0 {
+					duration = v
+					break
+				}
+			}
+		}
+
+		if duration > 0 {
+			// 头已给出时长，跳过解析
+		} else if audioFormat == "pcm" {
 			// PCM 格式没有文件头，根据 OpenAI TTS 的 PCM 参数计算时长
 			// 采样率: 24000 Hz, 位深度: 16-bit (2 bytes), 声道数: 1
 			const sampleRate = 24000

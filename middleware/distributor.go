@@ -390,6 +390,20 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 			modelRequest.Model = midjourneyModel
 		}
 		c.Set("relay_mode", relayMode)
+	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/videos/sync") && c.Request.Method == http.MethodPost {
+		// 同步视频生成（multipart 直返 MP4）：走普通 Relay 而非任务插件；
+		// 模型名取表单字段，缺省时取 query 参数
+		req, err := getModelFromRequest(c)
+		if err != nil {
+			return nil, false, err
+		}
+		if req != nil && req.Model != "" {
+			modelRequest.Model = req.Model
+		}
+		if modelRequest.Model == "" {
+			modelRequest.Model = c.Query("model")
+		}
+		c.Set("relay_mode", relayconstant.RelayModeVideoSync)
 	} else if strings.Contains(c.Request.URL.Path, "/v1/videos/") && strings.HasSuffix(c.Request.URL.Path, "/remix") {
 		relayMode := relayconstant.RelayModeVideoSubmit
 		c.Set("relay_mode", relayMode)

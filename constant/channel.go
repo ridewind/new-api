@@ -142,7 +142,6 @@ var ChannelBaseURLs = []string{
 	"",                                          //68
 	"",                                          //69
 	"https://api.modelarts-maas.com",            //70
->>>>>>> e368a413424657f8bfc4c4ca8bcfbb4e95322b7f
 }
 
 func GetChannelBaseURL(channelType int) string {

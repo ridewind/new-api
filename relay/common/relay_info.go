@@ -475,6 +475,18 @@ func GenRelayInfoEmbedding(c *gin.Context, request dto.Request) *RelayInfo {
 	return info
 }
 
+func GenRelayInfoOCR(c *gin.Context, request dto.Request) *RelayInfo {
+	info := genBaseRelayInfo(c, request)
+	info.RelayFormat = types.RelayFormatOpenAIOCR
+	return info
+}
+
+func GenRelayInfoVideoSync(c *gin.Context, request dto.Request) *RelayInfo {
+	info := genBaseRelayInfo(c, request)
+	info.RelayFormat = types.RelayFormatVideoSync
+	return info
+}
+
 func GenRelayInfoResponses(c *gin.Context, request *dto.OpenAIResponsesRequest) *RelayInfo {
 	info := genBaseRelayInfo(c, request)
 	info.RelayMode = relayconstant.RelayModeResponses
@@ -691,6 +703,10 @@ func GenRelayInfo(c *gin.Context, relayFormat types.RelayFormat, request dto.Req
 		info = GenRelayInfoGemini(c, request)
 	case types.RelayFormatEmbedding:
 		info = GenRelayInfoEmbedding(c, request)
+	case types.RelayFormatOpenAIOCR:
+		info = GenRelayInfoOCR(c, request)
+	case types.RelayFormatVideoSync:
+		info = GenRelayInfoVideoSync(c, request)
 	case types.RelayFormatOpenAIResponses:
 		if request, ok := request.(*dto.OpenAIResponsesRequest); ok {
 			info = GenRelayInfoResponses(c, request)
