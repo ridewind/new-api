@@ -214,9 +214,11 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	}
 
 	// record all the consume log even if quota is 0
-	if totalTokens == 0 {
+	if totalTokens == 0 && !usePrice {
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
+		// 按次计费（UsePrice，如 OCR）没有 token 概念，totalTokens==0 是正常形态，
+		// 不能套用这个「上游出错」守卫，否则按次价永远扣不到
 		quota = 0
 		logContent += "（可能是上游超时）"
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+

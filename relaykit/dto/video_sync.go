@@ -23,9 +23,10 @@ func (r *VideoSyncRequest) IsStream(c *http.Request) bool {
 	return false
 }
 
-// GetTokenCountMeta 返回 nil：同步视频按秒（音频 token 机制）或按次计费。
+// GetTokenCountMeta 返回零值 meta：同步视频按秒（音频 token 机制）或按次
+// 计费，不按输入 token；计费预处理链要求 meta 非空（拒 nil）。
 func (r *VideoSyncRequest) GetTokenCountMeta() *types.TokenCountMeta {
-	return nil
+	return &types.TokenCountMeta{}
 }
 
 func (r *VideoSyncRequest) SetModelName(modelName string) {

@@ -20,9 +20,10 @@ func (r *OCRRequest) IsStream(c *http.Request) bool {
 	return false
 }
 
-// GetTokenCountMeta 返回 nil：OCR 按次计费（ModelPrice），没有 token 估算诉求。
+// GetTokenCountMeta 返回零值 meta：OCR 按次计费（ModelPrice），没有 token
+// 估算诉求，但计费预处理链要求 meta 非空（service.CountRequestToken 拒 nil）。
 func (r *OCRRequest) GetTokenCountMeta() *types.TokenCountMeta {
-	return nil
+	return &types.TokenCountMeta{}
 }
 
 func (r *OCRRequest) SetModelName(modelName string) {
