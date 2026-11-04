@@ -752,6 +752,7 @@ func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommo
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {
 	if info.RelayMode == relayconstant.RelayModeAudioTranscription ||
 		info.RelayMode == relayconstant.RelayModeAudioTranslation ||
+		info.RelayMode == relayconstant.RelayModeVideoSync ||
 		(info.RelayMode == relayconstant.RelayModeImagesEdits && !isJSONRequest(c)) {
 		return channel.DoFormRequest(a, c, info, requestBody)
 	} else if info.RelayMode == relayconstant.RelayModeRealtime {
@@ -779,6 +780,14 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		}
 	case relayconstant.RelayModeRerank:
 		usage, err = common_handler.RerankHandler(c, info, resp)
+	case relayconstant.RelayModeOCR:
+		usage, err = common_handler.OCRHandler(c, info, resp)
+	case relayconstant.RelayModeVideoSync:
+		var videoReq *dto.VideoSyncRequest
+		if r, ok := info.Request.(*dto.VideoSyncRequest); ok {
+			videoReq = r
+		}
+		usage, err = common_handler.VideoSyncHandler(c, info, resp, videoReq)
 	case relayconstant.RelayModeResponses:
 		if info.IsStream {
 			usage, err = OaiResponsesStreamHandler(c, info, resp)

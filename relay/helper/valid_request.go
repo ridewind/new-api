@@ -50,6 +50,10 @@ func GetAndValidateRequest(c *gin.Context, format types.RelayFormat) (request dt
 		request, err = GetAndValidateEmbeddingRequest(c, relayMode)
 	case types.RelayFormatRerank:
 		request, err = GetAndValidateRerankRequest(c)
+	case types.RelayFormatOpenAIOCR:
+		request, err = GetAndValidateOCRRequest(c)
+	case types.RelayFormatVideoSync:
+		request, err = GetAndValidateVideoSyncRequest(c)
 	case types.RelayFormatOpenAIAudio:
 		request, err = GetAndValidAudioRequest(c, relayMode)
 	case types.RelayFormatOpenAIRealtime:
@@ -80,6 +84,60 @@ func GetAndValidAudioRequest(c *gin.Context, relayMode int) (*dto.AudioRequest, 
 		}
 	}
 	return audioRequest, nil
+}
+
+func GetAndValidateOCRRequest(c *gin.Context) (*dto.OCRRequest, error) {
+	ocrRequest := &dto.OCRRequest{}
+	if err := common.UnmarshalBodyReusable(c, ocrRequest); err != nil {
+		return nil, err
+	}
+	if ocrRequest.Model == "" {
+		return nil, errors.New("model is required")
+	}
+	if !ocrRequest.HasImage() {
+		return nil, errors.New("one of image / image_base64 / file is required")
+	}
+	return ocrRequest, nil
+}
+
+func GetAndValidateVideoSyncRequest(c *gin.Context) (*dto.VideoSyncRequest, error) {
+	request := &dto.VideoSyncRequest{}
+	if !strings.Contains(c.Request.Header.Get("Content-Type"), "multipart/form-data") {
+		return nil, errors.New("content-type must be multipart/form-data")
+	}
+	form, err := common.ParseMultipartFormReusable(c)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse video sync form request: %w", err)
+	}
+	// 挂回 c.Request 供转发阶段重建 multipart（与 images/edits 同一模式）
+	formData := url.Values(form.Value)
+	c.Request.MultipartForm = form
+	c.Request.PostForm = formData
+
+	request.Model = formData.Get("model")
+	if request.Model == "" {
+		request.Model = c.Query("model")
+	}
+	if request.Model == "" {
+		return nil, errors.New("model is required (form field or ?model= query)")
+	}
+	// 计费兜底时长：extra_params JSON 里的 duration 优先，其次顶层 duration
+	if extra := formData.Get("extra_params"); extra != "" {
+		var extraParams struct {
+			Duration float64 `json:"duration"`
+		}
+		if err := json.Unmarshal([]byte(extra), &extraParams); err == nil && extraParams.Duration > 0 {
+			request.DurationSeconds = extraParams.Duration
+		}
+	}
+	if request.DurationSeconds == 0 {
+		if d := strings.TrimSpace(formData.Get("duration")); d != "" {
+			if v, err := strconv.ParseFloat(d, 64); err == nil && v > 0 {
+				request.DurationSeconds = v
+			}
+		}
+	}
+	return request, nil
 }
 
 func GetAndValidateRerankRequest(c *gin.Context) (*dto.RerankRequest, error) {

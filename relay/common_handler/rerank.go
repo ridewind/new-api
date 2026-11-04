@@ -65,6 +65,9 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		if err != nil {
 			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 		}
+		// LiteLLM 等适配层会把用量挪进 meta.billed_units/tokens（Cohere 形状），顶层 usage 为 0，
+		// 先回填再走原有 prompt=total 的口径。
+		jinaResp.Meta.FillUsage(&jinaResp.Usage)
 		jinaResp.Usage.PromptTokens = jinaResp.Usage.TotalTokens
 	}
 

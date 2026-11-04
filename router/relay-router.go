@@ -152,6 +152,17 @@ func SetRelayRouter(router *gin.Engine) {
 			controller.Relay(c, types.RelayFormatRerank)
 		})
 
+		// OCR（aihub 自研 /v1/ocr，按次计费）
+		httpRouter.POST("/ocr", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatOpenAIOCR)
+		})
+
+		// 同步视频生成（multipart 直返 MP4，按秒/按次计费）；
+		// 与任务插件注册的 GET /v1/videos/:task_id 不同方法树，无路由冲突
+		httpRouter.POST("/videos/sync", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatVideoSync)
+		})
+
 		// gemini relay routes
 		httpRouter.POST("/engines/:model/embeddings", func(c *gin.Context) {
 			controller.Relay(c, types.RelayFormatGemini)
