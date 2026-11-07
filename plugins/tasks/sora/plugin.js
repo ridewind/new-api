@@ -7,11 +7,12 @@ export const meta = {
     en: "OpenAI Sora video generation (text-to-video, image-to-video, and remix)",
     zh: "OpenAI Sora 视频生成（文生视频、图生视频、remix）",
   },
-  version: "1.2.0",
+  version: "1.2.2",
   channelTypes: [55, 1], // OpenAI-type channels natively serve sora with the same wire format
   author: { name: "QuantumNous" },
-  models: ["sora-2", "sora-2-pro", "*"], // "*"=通配声明（zretc Go 侧支持）：OpenAI 型渠道上任意 served 视频模型（自建 Wan2.2/MiniMax-H3 等）免逐名声明
-  // zretc 历史显式声明（通配已覆盖，保留作文档）：Wan2.2-TI2V-5B、MiniMax-H3 // zretc: 声明自建 Wan 部署（OpenAI 型渠道同线协议），任务计费表达式校验要求声明
+  models: ["sora-2", "sora-2-pro"],
+  // zretc：通配声明收窄在 openai_video 协议内（models:["*"]）——OpenAI 型渠道上任意 served
+  // 视频模型（自建 Wan2.2/MiniMax-H3 等）免逐名声明，且不劫持本插件声明的其他协议路径。 // zretc: 声明自建 Wan 部署（OpenAI 型渠道同线协议），任务计费表达式校验要求声明
   fetchMode: "per_task",
   // A New API gateway serves /v1/videos as a host protocol, so no URL changes.
   upstreams: ["vendor", "new_api"],
@@ -34,7 +35,7 @@ export const meta = {
       description: { en: "Output video dimensions", zh: "输出视频尺寸" },
     },
   },
-  protocols: [{ name: "openai_responses", supports: ["stream", "sync", "background"] }, "openai_video"],
+  protocols: [{ name: "openai_responses", supports: ["stream", "sync", "background"] }, { name: "openai_video", models: ["*"] }],
 };
 
 function trimmed(value) {

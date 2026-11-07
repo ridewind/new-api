@@ -1429,6 +1429,10 @@ func normalizeV1Meta(meta *Meta) error {
 			return err
 		}
 		for _, model := range claim.Models {
+			// 通配条目是范围声明而非具体模型，不要求出现在 meta.models
+			if model == ModelWildcard {
+				continue
+			}
 			if _, exists := models[model]; !exists {
 				return fmt.Errorf("plugin protocol %q model %q is not declared in plugin meta models", claim.Name, model)
 			}

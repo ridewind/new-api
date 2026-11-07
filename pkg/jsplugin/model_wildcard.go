@@ -38,3 +38,48 @@ func ConcreteModels(models []string) []string {
 	}
 	return out
 }
+
+// HasModelWildcard reports whether the plugin claims models via a wildcard —
+// at the top level or inside any protocol claim.
+func (m Meta) HasModelWildcard() bool {
+	if slices.Contains(m.Models, ModelWildcard) {
+		return true
+	}
+	for _, claim := range m.Protocols {
+		if slices.Contains(claim.Models, ModelWildcard) {
+			return true
+		}
+	}
+	return false
+}
+
+// DeclaresModelName is the model-ownership check for a whole plugin: the top
+// level list, any protocol claim's list, or any wildcard in either.
+func (m Meta) DeclaresModelName(name string) bool {
+	if slices.Contains(m.Models, name) || slices.Contains(m.Models, ModelWildcard) {
+		return true
+	}
+	for _, claim := range m.Protocols {
+		if slices.Contains(claim.Models, name) || slices.Contains(claim.Models, ModelWildcard) {
+			return true
+		}
+	}
+	return false
+}
+
+// EffectiveModelScope is the model list ownership checks run against: the
+// top level list, every protocol claim's list, and the wildcard when the
+// plugin claims one anywhere.
+func (m Meta) EffectiveModelScope() []string {
+	out := slices.Clone(m.Models)
+	for _, claim := range m.Protocols {
+		out = append(out, claim.Models...)
+	}
+	if slices.Contains(out, ModelWildcard) {
+		return out
+	}
+	if m.HasModelWildcard() {
+		return append(out, ModelWildcard)
+	}
+	return out
+}

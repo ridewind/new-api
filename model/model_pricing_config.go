@@ -292,7 +292,7 @@ func GetModelPricingSnapshot(names []string) (*ModelPricingSnapshot, error) {
 				configuredValue, overridden := configuredVariants[key]
 				configuredExpr, _ := configuredValue.(string)
 				plugin, exists := generation.Get(key)
-				if !exists || !jsplugin.DeclaresModel(plugin.Meta.Models, name) {
+				if !exists || !jsplugin.DeclaresModel(plugin.Meta.EffectiveModelScope(), name) {
 					variant := ModelPricingPluginVariant{
 						PluginKey: key, PluginName: key, Configured: configuredExpr,
 						UsageSchema: map[string]jsplugin.UsageFieldSchema{}, Stale: true,
@@ -491,7 +491,7 @@ func validateModelPricing(name string, values, previous PricingValues) error {
 				return fmt.Errorf("model %s: plugin %s: billing expression is required", name, key)
 			}
 			plugin, exists := generation.Get(key)
-			declared := exists && jsplugin.DeclaresModel(plugin.Meta.Models, name)
+			declared := exists && jsplugin.DeclaresModel(plugin.Meta.EffectiveModelScope(), name)
 			// An unchanged override stays saveable after its plugin disappears or
 			// stops declaring the model. A sole provider also keeps it after
 			// narrowing its usage profile; relay checks shared models against

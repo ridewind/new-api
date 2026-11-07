@@ -600,6 +600,11 @@ func (g *RoutingGeneration) LookupEndpointCandidates(method, path, model string)
 		return nil
 	}
 	bindings := g.protocolIndex[endpointIndexKey(normalizedMethod, path, model)]
+	if len(bindings) == 0 {
+		// 通配声明的兜底：显式声明优先（其绑定必然先命中），未被任何插件
+		// 显式声明的模型由通配认领的插件服务。
+		bindings = g.protocolIndex[endpointIndexKey(normalizedMethod, path, ModelWildcard)]
+	}
 	return append([]ProtocolBinding(nil), bindings...)
 }
 
@@ -1174,13 +1179,30 @@ func buildRoutingGenerationFromPlugins(effective map[string]*LoadedPlugin, numbe
 			definition, _ := HostProtocol(claim.Name)
 			boundModels := ConcreteModels(plugin.Meta.Models)
 			if len(claim.Models) > 0 {
-				boundModels = claim.Models
+				boundModels = ConcreteModels(claim.Models)
 			}
+			// 通配只认协议声明内的条目（claim.Models 含 "*"）：插件级通配会
+			// 劫持该插件声明的所有协议路径（如 sora 同时声明聊天与视频路径）。
+			wildcardClaim := slices.Contains(claim.Models, ModelWildcard)
 			for _, operation := range definition.Operations {
 				if operation.ModelField == "" {
 					continue
 				}
 				for _, method := range operation.Methods {
+					if wildcardClaim {
+						// 通配声明：在独立的通配键位下生成兜底绑定，任何未被
+						// 显式声明的模型都能命中（查找时精确键优先于通配键）。
+						wildKey := endpointIndexKey(method, operation.Path, ModelWildcard)
+						wildBindings := generation.protocolIndex[wildKey]
+						if len(wildBindings) > 0 {
+							other := wildBindings[0]
+							return nil, fmt.Errorf("plugin %s wildcard claim on %s %s conflicts with plugin %s",
+								plugin.Meta.Key, method, operation.Path, other.Plugin.Meta.Key)
+						}
+						generation.protocolIndex[wildKey] = append(wildBindings, ProtocolBinding{
+							Plugin: plugin, Protocol: claim.Name, Operation: operation, Model: ModelWildcard,
+						})
+					}
 					for _, model := range boundModels {
 						indexKey := endpointIndexKey(method, operation.Path, model)
 						bindings := generation.protocolIndex[indexKey]

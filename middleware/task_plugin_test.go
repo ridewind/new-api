@@ -773,6 +773,13 @@ func TestTaskPluginEndpointMissPreservesOrdinaryRequestBody(t *testing.T) {
 		PrepareTaskPluginEndpoint(),
 		func(c *gin.Context) {
 			_, pinned := c.Get(jsplugin.ContextKeyPinnedEndpoint)
+			if pinned {
+				if pe, ok := c.Get(jsplugin.ContextKeyPinnedEndpoint); ok {
+					if typed, ok := pe.(jsplugin.PinnedEndpoint); ok {
+						t.Logf("DEBUG pinned key=%s ver=%s models=%v", typed.Plugin.Meta.Key, typed.Plugin.Meta.Version, typed.Plugin.Meta.Models)
+					}
+				}
+			}
 			assert.False(t, pinned)
 			storage, storageErr := common.GetBodyStorage(c)
 			require.NoError(t, storageErr)

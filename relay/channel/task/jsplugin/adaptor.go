@@ -200,7 +200,7 @@ func (a *TaskAdaptor) ValidateRequestAndSetAction(c *gin.Context, info *relaycom
 					resolved, resolvedOK := resolvedValue.(map[string]any)
 					kind, _ := resolved["kind"].(string)
 					resolvedModel, _ := resolved["model"].(string)
-					served, _, owned := model.ResolveTaskPluginModel(pinned.Generation, resolvedModel, a.plugin.Meta.Models)
+					served, _, owned := model.ResolveTaskPluginModel(pinned.Generation, resolvedModel, a.plugin.Meta.EffectiveModelScope())
 					if callErr != nil || !resolvedOK || kind != string(pluginruntime.RouteTypeSubmit) || !owned || served != c.GetString("resolved_task_model") {
 						return service.TaskErrorWrapperLocal(fmt.Errorf("final task plugin decoder rejected the pinned model"), "plugin_request_invalid", http.StatusBadRequest)
 					}
