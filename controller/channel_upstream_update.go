@@ -369,7 +369,7 @@ func fetchChannelUpstreamModelIDs(channel *model.Channel) ([]string, error) {
 		if !ok {
 			return nil, fmt.Errorf("task plugin %q is not registered", channel.GetSetting().TaskPluginKey)
 		}
-		return normalizeModelNames(plugin.Meta.Models), nil
+		return normalizeModelNames(jsplugin.ConcreteModels(plugin.Meta.Models)), nil
 	}
 	baseURL := constant.GetChannelBaseURL(channel.Type)
 	if channel.GetBaseURL() != "" {

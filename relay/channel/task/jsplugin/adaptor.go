@@ -781,7 +781,7 @@ func (a *TaskAdaptor) ParseResponse(c *gin.Context, resp *http.Response, info *r
 	return response, nil
 }
 
-func (a *TaskAdaptor) GetModelList() []string { return append([]string(nil), a.plugin.Meta.Models...) }
+func (a *TaskAdaptor) GetModelList() []string { return pluginruntime.ConcreteModels(a.plugin.Meta.Models) }
 func (a *TaskAdaptor) GetChannelName() string { return a.plugin.Meta.Name }
 func (a *TaskAdaptor) FetchMode() string      { return a.plugin.Meta.FetchMode }
 

@@ -1127,6 +1127,9 @@ func buildRoutingGenerationFromPlugins(effective map[string]*LoadedPlugin, numbe
 		generation.byKey[key] = plugin
 		generation.plugins = append(generation.plugins, plugin)
 		for _, model := range plugin.Meta.Models {
+			if IsModelWildcard(model) {
+				continue
+			}
 			generation.modelPlugins[model] = append(generation.modelPlugins[model], plugin)
 			if _, exists := generation.byModel[model]; !exists {
 				generation.byModel[model] = plugin
@@ -1169,7 +1172,7 @@ func buildRoutingGenerationFromPlugins(effective map[string]*LoadedPlugin, numbe
 
 		for _, claim := range plugin.Meta.Protocols {
 			definition, _ := HostProtocol(claim.Name)
-			boundModels := plugin.Meta.Models
+			boundModels := ConcreteModels(plugin.Meta.Models)
 			if len(claim.Models) > 0 {
 				boundModels = claim.Models
 			}

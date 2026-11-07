@@ -99,7 +99,7 @@ func init() {
 		apiType, success := common.ChannelType2APIType(i)
 		if !success || apiType == constant.APITypeAIProxyLibrary {
 			if plugin, ok := jsplugin.DefaultRegistry.GetByChannelType(i); ok {
-				channelId2Models[i] = append([]string(nil), plugin.Meta.Models...)
+				channelId2Models[i] = append([]string(nil), jsplugin.ConcreteModels(plugin.Meta.Models)...)
 			}
 			continue
 		}
@@ -111,7 +111,7 @@ func init() {
 		channelId2Models[i] = adaptor.GetModelList()
 		if len(channelId2Models[i]) == 0 {
 			if plugin, ok := jsplugin.DefaultRegistry.GetByChannelType(i); ok {
-				channelId2Models[i] = append([]string(nil), plugin.Meta.Models...)
+				channelId2Models[i] = append([]string(nil), jsplugin.ConcreteModels(plugin.Meta.Models)...)
 			}
 		}
 	}
@@ -329,7 +329,7 @@ func DashboardListModels(c *gin.Context) {
 	}
 	for channelType := 1; channelType <= constant.ChannelTypeDummy; channelType++ {
 		if plugin, ok := jsplugin.DefaultRegistry.GetByChannelType(channelType); ok {
-			modelsByChannel[channelType] = append([]string(nil), plugin.Meta.Models...)
+			modelsByChannel[channelType] = append([]string(nil), jsplugin.ConcreteModels(plugin.Meta.Models)...)
 		}
 	}
 	c.JSON(200, gin.H{

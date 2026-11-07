@@ -1,7 +1,6 @@
 package model
 
 import (
-	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -52,17 +51,17 @@ func ResolveTaskModelAlias(g *jsplugin.RoutingGeneration, name string) (TaskAlia
 // the declared spelling, a channel alias under the alias. declared is the
 // model of models the name stands for. A nil g matches exact names only.
 func ResolveTaskPluginModel(g *jsplugin.RoutingGeneration, name string, models []string) (served, declared string, ok bool) {
-	if slices.Contains(models, name) {
+	if jsplugin.DeclaresModel(models, name) {
 		return name, name, true
 	}
 	if canonical, found := g.CanonicalModel(name); found {
-		if !slices.Contains(models, canonical) {
+		if !jsplugin.DeclaresModel(models, canonical) {
 			return "", "", false
 		}
 		return canonical, canonical, true
 	}
 	target, found := ResolveTaskModelAlias(g, name)
-	if !found || target.Declared == "" || !slices.Contains(models, target.Declared) {
+	if !found || target.Declared == "" || !jsplugin.DeclaresModel(models, target.Declared) {
 		return "", "", false
 	}
 	return target.Alias, target.Declared, true

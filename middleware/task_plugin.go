@@ -895,7 +895,7 @@ func PrepareTaskPluginEndpoint() gin.HandlerFunc {
 			} else if model, _ := result["model"].(string); strings.TrimSpace(model) == "" {
 				reason = "invalid_model"
 				detail = "decoded request is missing a model"
-			} else if model != pinned.Model || (pinned.MappedModel == "" && !slices.Contains(candidate.Plugin.Meta.Models, model)) {
+			} else if model != pinned.Model || (pinned.MappedModel == "" && !pluginruntime.DeclaresModel(candidate.Plugin.Meta.Models, model)) {
 				reason = "resolved_model_not_owned"
 				detail = fmt.Sprintf("model %q is not served by this plugin", model)
 			}

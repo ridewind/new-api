@@ -1,0 +1,46 @@
+# zretc arm64 构建（工作站无 qemu-binfmt 专用）
+# 原理：所有 RUN 都在 amd64 基础镜像里原生执行——
+#   前端 bun 构建（产物平台无关）、Go GOARCH=arm64 交叉编译（CGO_ENABLED=0）；
+#   运行时层只有 COPY（CA 证书与 zoneinfo 从 amd64 容器直接拷，内容平台无关），
+#   因此全程不需要 arm64 模拟。
+FROM --platform=$BUILDPLATFORM oven/bun:1.4.4@sha256:1d22548f177f4ff38e0c15baa3c2c46c6c2060ba2d1bc573bb4720b407548f1d AS builder
+
+WORKDIR /build/web
+COPY web/package.json web/bun.lock ./
+RUN bun install --frozen-lockfile
+COPY ./web ./
+COPY ./VERSION /build/VERSION
+RUN DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat /build/VERSION) bun run build
+
+FROM --platform=$BUILDPLATFORM golang:1.26.10-alpine@sha256:9ce231b28998b32e116927c61aa5c406183061d4f3f2d61b292c88e7f6bdf7ca AS builder2
+ENV GO111MODULE=on CGO_ENABLED=0 GOWORK=off GOOS=linux GOARCH=arm64 GOEXPERIMENT=greenteagc
+
+WORKDIR /build
+
+# 运行时层需要的证书与 zoneinfo（内容与架构无关，从本 amd64 容器带出）
+RUN apk add --no-cache ca-certificates tzdata
+
+ADD go.mod go.sum ./
+ADD relaykit/go.mod ./relaykit/go.mod
+ADD tokenkit/go.mod ./tokenkit/go.mod
+RUN go mod download
+
+COPY . .
+COPY --from=builder /build/web/dist ./web/dist
+RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=$(cat VERSION)'" -o new-api
+
+# 运行时改用 scratch：Go 交叉编译 CGO_ENABLED=0 为静态二进制，证书/时区已从
+# builder2 COPY（内容架构无关），镜像内无 shell——纯运行用途，kubectl exec 调试用日志替代。
+# （debian 基础镜像在镜像加速器上 arm64 manifest 不稳，为构建确定性改为 scratch）
+FROM scratch
+
+# 原 Dockerfile 在此层 apt-get 安装 ca-certificates/tzdata（需 arm64 执行），
+# 这里改为从 builder2 COPY（内容架构无关），保持运行时行为等价
+COPY --from=builder2 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder2 /usr/share/zoneinfo /usr/share/zoneinfo
+
+COPY --from=builder2 /build/new-api /
+COPY LICENSE NOTICE THIRD-PARTY-LICENSES.md /licenses/
+EXPOSE 3000
+WORKDIR /data
+ENTRYPOINT ["/new-api"]

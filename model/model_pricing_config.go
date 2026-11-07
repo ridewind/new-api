@@ -292,7 +292,7 @@ func GetModelPricingSnapshot(names []string) (*ModelPricingSnapshot, error) {
 				configuredValue, overridden := configuredVariants[key]
 				configuredExpr, _ := configuredValue.(string)
 				plugin, exists := generation.Get(key)
-				if !exists || !slices.Contains(plugin.Meta.Models, name) {
+				if !exists || !jsplugin.DeclaresModel(plugin.Meta.Models, name) {
 					variant := ModelPricingPluginVariant{
 						PluginKey: key, PluginName: key, Configured: configuredExpr,
 						UsageSchema: map[string]jsplugin.UsageFieldSchema{}, Stale: true,
@@ -370,7 +370,7 @@ func GetModelPricingIssues(pluginKey string) ([]ModelPricingIssue, error) {
 	names := make(map[string]bool)
 	for _, plugin := range generation.Plugins() {
 		if pluginKey == "" || plugin.Meta.Key == pluginKey {
-			for _, name := range plugin.Meta.Models {
+			for _, name := range jsplugin.ConcreteModels(plugin.Meta.Models) {
 				names[name] = true
 			}
 		}
@@ -443,7 +443,7 @@ func installedTaskPluginModels(key string) ([]string, error) {
 		if compileErr != nil {
 			return nil, nil
 		}
-		return loaded.Meta.Models, nil
+		return jsplugin.ConcreteModels(loaded.Meta.Models), nil
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
@@ -491,7 +491,7 @@ func validateModelPricing(name string, values, previous PricingValues) error {
 				return fmt.Errorf("model %s: plugin %s: billing expression is required", name, key)
 			}
 			plugin, exists := generation.Get(key)
-			declared := exists && slices.Contains(plugin.Meta.Models, name)
+			declared := exists && jsplugin.DeclaresModel(plugin.Meta.Models, name)
 			// An unchanged override stays saveable after its plugin disappears or
 			// stops declaring the model. A sole provider also keeps it after
 			// narrowing its usage profile; relay checks shared models against
