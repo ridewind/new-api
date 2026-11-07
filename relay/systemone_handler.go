@@ -43,17 +43,13 @@ func SystemoneHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 	}
 	adaptor.Init(info)
 
-	jsonData, err := common.Marshal(request)
-	if err != nil {
-		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
-	}
-	logger.LogDebug(c, "systemone request body size: %d bytes", len(jsonData))
-	body, closer, err := relaycommon.NewOutboundJSONBody(jsonData)
+	// 无映射透传原始字节（laya 对键序敏感），有映射回退重序列化改名
+	body, closer, bodyMode, err := helper.BuildSystemoneOutboundBody(c, info, request)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 	}
 	defer closer.Close()
-	jsonData = nil
+	logger.LogDebug(c, "systemone request body (%s): %d bytes", bodyMode, body.Size())
 	requestBody := io.Reader(body)
 
 	resp, err := adaptor.DoRequest(c, info, requestBody)
