@@ -54,6 +54,8 @@ func GetAndValidateRequest(c *gin.Context, format types.RelayFormat) (request dt
 		request, err = GetAndValidateOCRRequest(c)
 	case types.RelayFormatVideoSync:
 		request, err = GetAndValidateVideoSyncRequest(c)
+	case types.RelayFormatSystemone:
+		request, err = GetAndValidateSystemoneRequest(c)
 	case types.RelayFormatOpenAIAudio:
 		request, err = GetAndValidAudioRequest(c, relayMode)
 	case types.RelayFormatOpenAIRealtime:
@@ -98,6 +100,26 @@ func GetAndValidateOCRRequest(c *gin.Context) (*dto.OCRRequest, error) {
 		return nil, errors.New("one of image / image_base64 / file is required")
 	}
 	return ocrRequest, nil
+}
+
+// GetAndValidateSystemoneRequest 校验 /v1/systemone 请求体（System One 原生
+// 决策形状），口径与模型侧 cpu-laya app.py 原生分支一致：state 与 questions
+// 缺一不可（缺一上游 400），model 由网关用于渠道路由。
+func GetAndValidateSystemoneRequest(c *gin.Context) (*dto.SystemoneRequest, error) {
+	req := &dto.SystemoneRequest{}
+	if err := common.UnmarshalBodyReusable(c, req); err != nil {
+		return nil, err
+	}
+	if req.Model == "" {
+		return nil, errors.New("model is required")
+	}
+	if req.State == nil {
+		return nil, errors.New("state is required")
+	}
+	if len(req.Questions) == 0 {
+		return nil, errors.New("questions is required and must be a non-empty object")
+	}
+	return req, nil
 }
 
 func GetAndValidateVideoSyncRequest(c *gin.Context) (*dto.VideoSyncRequest, error) {

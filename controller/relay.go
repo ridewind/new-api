@@ -49,6 +49,8 @@ func relayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPIErro
 		err = relay.OCRHelper(c, info)
 	case relayconstant.RelayModeVideoSync:
 		err = relay.VideoSyncHelper(c, info)
+	case relayconstant.RelayModeSystemone:
+		err = relay.SystemoneHelper(c, info)
 	case relayconstant.RelayModeEmbeddings:
 		err = relay.EmbeddingHelper(c, info)
 	case relayconstant.RelayModeResponses, relayconstant.RelayModeResponsesCompact:

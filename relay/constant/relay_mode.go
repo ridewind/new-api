@@ -44,6 +44,8 @@ const (
 
 	RelayModeVideoSync
 
+	RelayModeSystemone
+
 	RelayModeResponses
 
 	RelayModeRealtime
@@ -98,6 +100,8 @@ func Path2RelayMode(path string) int {
 		relayMode = RelayModeOCR
 	} else if strings.HasPrefix(path, "/v1/videos/sync") {
 		relayMode = RelayModeVideoSync
+	} else if strings.HasPrefix(path, "/v1/systemone") {
+		relayMode = RelayModeSystemone
 	} else if strings.HasPrefix(path, "/v1/realtime") {
 		relayMode = RelayModeRealtime
 	} else if strings.HasPrefix(path, "/v1beta/models") || strings.HasPrefix(path, "/v1/models") {

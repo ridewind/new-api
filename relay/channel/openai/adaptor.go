@@ -788,6 +788,8 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 			videoReq = r
 		}
 		usage, err = common_handler.VideoSyncHandler(c, info, resp, videoReq)
+	case relayconstant.RelayModeSystemone:
+		usage, err = common_handler.SystemoneHandler(c, info, resp)
 	case relayconstant.RelayModeResponses:
 		if info.IsStream {
 			usage, err = OaiResponsesStreamHandler(c, info, resp)

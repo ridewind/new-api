@@ -157,6 +157,11 @@ func SetRelayRouter(router *gin.Engine) {
 			controller.Relay(c, types.RelayFormatOpenAIOCR)
 		})
 
+		// System One 原生决策（aihub 自研 /v1/systemone，按次计费，响应透传不包装）
+		httpRouter.POST("/systemone", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatSystemone)
+		})
+
 		// 同步视频生成（multipart 直返 MP4，按秒/按次计费）；
 		// 与任务插件注册的 GET /v1/videos/:task_id 不同方法树，无路由冲突
 		httpRouter.POST("/videos/sync", func(c *gin.Context) {
