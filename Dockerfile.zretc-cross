@@ -1,0 +1,46 @@
+# zretc 双架构交叉构建（amd64 / arm64，全程原生 RUN 无 qemu）
+# 基于 Dockerfile.zretc-arm64（rc.48-zretc.6 镜像配方）做两点调整：
+#   1. GOARCH 参数化：ARG GOARCH_TARGET（默认 amd64；arm64 构建传 --build-arg GOARCH_TARGET=arm64）
+#   2. 基底改为 tag 引用——arm64 版钉的 digest 是单架构 manifest，amd64 构建机解析不到
+#      amd64 变体；且本机 daemon 已配镜像加速可拉。另 GOPROXY 指 goproxy.cn
+#      （构建机直连 proxy.golang.org 不通，node-a 构建时无此问题）。
+# 原理同 arm64 版：前端 bun 构建产物平台无关、Go 交叉编译（CGO_ENABLED=0 静态二进制）、
+# 运行时 scratch 仅 COPY（CA 证书与 zoneinfo 从原生容器带出，内容架构无关）。
+FROM --platform=$BUILDPLATFORM oven/bun:1.4.4 AS builder
+
+WORKDIR /build/web
+COPY web/package.json web/bun.lock ./
+RUN bun install --frozen-lockfile
+COPY ./web ./
+COPY ./VERSION /build/VERSION
+RUN DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat /build/VERSION) bun run build
+
+FROM --platform=$BUILDPLATFORM golang:1.26.10-alpine AS builder2
+ARG GOARCH_TARGET=amd64
+ENV GO111MODULE=on CGO_ENABLED=0 GOWORK=off GOOS=linux GOARCH=${GOARCH_TARGET} GOEXPERIMENT=greenteagc GOPROXY=https://goproxy.cn,direct
+
+WORKDIR /build
+
+# 运行时层需要的证书与 zoneinfo（内容与架构无关，从构建机原生容器带出）
+RUN apk add --no-cache ca-certificates tzdata
+
+ADD go.mod go.sum ./
+ADD relaykit/go.mod ./relaykit/go.mod
+ADD tokenkit/go.mod ./tokenkit/go.mod
+RUN go mod download
+
+COPY . .
+COPY --from=builder /build/web/dist ./web/dist
+RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=$(cat VERSION)'" -o new-api
+
+# 运行时 scratch：静态二进制 + 证书/时区，镜像内无 shell（与 rc.48-zretc.6 一致）
+FROM scratch
+
+COPY --from=builder2 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder2 /usr/share/zoneinfo /usr/share/zoneinfo
+
+COPY --from=builder2 /build/new-api /
+COPY LICENSE NOTICE THIRD-PARTY-LICENSES.md /licenses/
+EXPOSE 3000
+WORKDIR /data
+ENTRYPOINT ["/new-api"]
